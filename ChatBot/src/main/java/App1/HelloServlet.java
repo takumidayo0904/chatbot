@@ -15,125 +15,131 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+
 @WebServlet("/HelloServlet")
 public class HelloServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
-    private final String JUPYTER_LAB_URL = "http://127.0.0.1:5000/process_data";
+	//Javaのバージョン違いでも正しく動作可能
+	private static final long serialVersionUID = 1L;
+	private final String JUPYTER_LAB_URL = "http://127.0.0.1:5000/process_data";
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String msg = request.getParameter("message");
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		//////////パラメータの取得//////////
+		String msg = request.getParameter("message");
+		if (msg == null || msg.isEmpty()) {
+			response.getWriter().println("not missing");
+			return;
+		}
+		///////////////////////////////////
 
-        if (msg == null || msg.isEmpty()) {
-            response.getWriter().println("Message is missing");
-            return;
-        }
+		DBAcs dba = new DBAcs();
+		try {
+			//Jupyter Lab にメッセージをレスポンス
+			String jupyterResponse = sendToJupyterLab(msg);
+			//デコード
+			jupyterResponse = decodeUnicode(jupyterResponse);
+			/////////////sql実行/////////////
+			String sql = "INSERT INTO chat (text, status) VALUES ('" + msg + "','java');";
+			System.out.println(sql);
+			dba.updateExe(sql);
+			////////////////////////////////
+			
+			//デコードメッセージここだよ #できてない？
+			response.setCharacterEncoding("UTF-8");
+			String decodedmsg = URLDecoder.decode(msg, "UTF-8");
+			System.out.println("Message inserted: " + decodedmsg);
 
-        DBAcs dba = new DBAcs();
-        try {            
-        	String jupyterResponse = sendToJupyterLab(msg);
-        	
-            jupyterResponse = decodeUnicode(jupyterResponse);//デコード
-            
-        	String sql = "INSERT INTO chat (text, status) VALUES ('" + msg + "','java');";
-        	System.out.println(sql);
-       dba.updateExe(sql);
-       
-       		//デコードメッセージここだよ
-       		response.setCharacterEncoding("UTF-8");
-       		String decodedmsg = URLDecoder.decode(msg, "UTF-8");
+			response.getWriter().println("Message successfully sent to Jupyter Lab: " + msg);
+			response.getWriter().println("Jupyter Response: " + jupyterResponse);
 
+			/////////////////////////表示//////////////////////////
+			HttpSession session = request.getSession();
+			String chatHistory = (String) session.getAttribute("chatHistory");
+			//NullPointerExceptionが発生してしまう為
+			if (chatHistory == null) {
+				chatHistory = "";
+			}
+			msg = decodeUnicode(msg);
+			System.out.println(msg);
+			chatHistory += "ユーザー: " + msg + "<br>Bot: " + jupyterResponse + "<br>";
+			session.setAttribute("chatHistory", chatHistory);
 
-            System.out.println("Message inserted: " + decodedmsg);
+			response.sendRedirect("index.jsp");
+			//////////////////////////////////////////////////////
 
+		} catch (Exception e) {
+			e.printStackTrace();
+			response.getWriter().println("An error occurred: " + e.getMessage());
+		}
+	}
 
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		doGet(request, response);
+	}
 
-            response.getWriter().println("Message successfully sent to Jupyter Lab: " + msg);
-            response.getWriter().println("Jupyter Response: " + jupyterResponse);
-            
-            /////////////////////////表示//////////////////////////
-            HttpSession session = request.getSession();
-            String chatHistory = (String) session.getAttribute("chatHistory");
-            if (chatHistory == null) {
-                chatHistory = "";
-            }
-            msg = decodeUnicode(msg);
-            System.out.println(msg);
-            chatHistory += "ユーザー: " + msg + "<br>Bot: " + jupyterResponse + "<br>";
-            session.setAttribute("chatHistory", chatHistory);
-            
-            response.sendRedirect("index.jsp");
-            //////////////////////////////////////////////////////
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.getWriter().println("An error occurred: " + e.getMessage());
-        }
-    }
+	private String sendToJupyterLab(String data) {
+		try {
+			URL url = new URL(JUPYTER_LAB_URL);
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("POST");
+			connection.setRequestProperty("Content-Type", "application/json; utf-8");
+			connection.setDoOutput(true);
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        doGet(request, response);
-    }
+			//メッセージをJSON形式でJupyter Labに送る。
+			String jsonInputString = "{\"message\": \"" + data + "\"}";
+			try (OutputStream os = connection.getOutputStream()) {
+				byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+				os.write(input, 0, input.length);
+			}
 
-    private String sendToJupyterLab(String data) {
-        try {
-            URL url = new URL(JUPYTER_LAB_URL);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json; utf-8");
-            connection.setDoOutput(true);
+			int responseCode = connection.getResponseCode();
+			//Jupyter Labからの 返事を読み取る
+			if (responseCode == HttpURLConnection.HTTP_OK) {
+				
+				try (BufferedReader br = new BufferedReader(
+						new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+					StringBuilder response = new StringBuilder();
+					String line;
+					while ((line = br.readLine()) != null) {
+						response.append(line);
+					}
+					System.out.println("Jupyter Lab Response: " + response.toString());
+					return response.toString();
+				}
+			} else {
+				return "Error: Received HTTP response code " + responseCode;
+			}
 
-            String jsonInputString = "{\"message\": \"" + data + "\"}";
+		} catch (IOException e) {
+			e.printStackTrace();
+			return "Error while communicating with Jupyter Lab: " + e.getMessage();
+		}
+	}
 
-            try (OutputStream os = connection.getOutputStream()) {
-                byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-            }
+	///////////////////文字記号デコードメソッド///////
+	private String decodeUnicode(String response) {
+		StringBuilder decodedString = new StringBuilder();
+		int length = response.length();
+		for (int i = 0; i < length; i++) {
+			char ch = response.charAt(i);
+			if (ch == '\\' && i + 5 < length && response.charAt(i + 1) == 'u') {
+				String hexCode = response.substring(i + 2, i + 6);
+				try {
+					int codePoint = Integer.parseInt(hexCode, 16);
+					decodedString.append((char) codePoint);
+					i += 5;
+				} catch (NumberFormatException e) {
+					decodedString.append(ch);
+				}
+			} else {
+				decodedString.append(ch);
+			}
+		}
 
-            int responseCode = connection.getResponseCode();
-
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        response.append(line);
-                    }
-                    System.out.println("Jupyter Lab Response: " + response.toString());
-                    return response.toString();
-                }
-            } else {
-                return "Error: Received HTTP response code " + responseCode;
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Error while communicating with Jupyter Lab: " + e.getMessage();
-        }
-    }
-
-    ///////////////////文字記号デコードメソッド///////
-    private String decodeUnicode(String response) {
-        StringBuilder decodedString = new StringBuilder();
-        int length = response.length();
-        for (int i = 0; i < length; i++) {
-            char ch = response.charAt(i);
-            if (ch == '\\' && i + 5 < length && response.charAt(i + 1) == 'u') {
-                String hexCode = response.substring(i + 2, i + 6);
-                try {
-                    int codePoint = Integer.parseInt(hexCode, 16);
-                    decodedString.append((char) codePoint);
-                    i += 5;
-                } catch (NumberFormatException e) {
-                    decodedString.append(ch);
-                }
-            } else {
-                decodedString.append(ch);
-            }
-        }
-        
-        System.out.println();
-        return decodedString.toString();
-    }
+		System.out.println();
+		return decodedString.toString();
+	}
 
 	public static long getSerialversionuid() {
 		return serialVersionUID;
