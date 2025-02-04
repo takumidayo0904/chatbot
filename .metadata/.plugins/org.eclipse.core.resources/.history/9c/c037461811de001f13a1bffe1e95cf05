@@ -1,0 +1,102 @@
+package App1;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper; // Jacksonライブラリ
+
+@WebServlet("/servlet/HelloServlet")
+public class HelloServlet extends HttpServlet {
+    private final String JUPYTER_LAB_URL = "http://127.0.0.1:5000/process_data";
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        response.setContentType("text/plain; charset=UTF-8");
+
+        PrintWriter out = response.getWriter();
+        out.println("このサーブレットはJupyter Labとの通信のためPOSTリクエストのみをサポートします。");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8"); // リクエストの文字エンコーディング設定
+        response.setContentType("text/plain; charset=UTF-8");
+
+        String message = request.getParameter("message");
+
+        // Jupyter Labへデータ送信
+        String jupyterResponse = sendToJupyterLab(message);
+
+        // Unicodeエスケープ文字列をデコード
+        jupyterResponse = decodeUnicode(jupyterResponse);
+
+        PrintWriter out = response.getWriter();
+        out.println("Message successfully sent to Jupyter Lab: " + message);
+        out.println("Jupyter Response: " + jupyterResponse);
+    }
+
+    // Jupyter Labへデータ送信処理
+    private String sendToJupyterLab(String data) {
+        try {
+            URL url = new URL(JUPYTER_LAB_URL);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json; utf-8");
+            connection.setDoOutput(true);
+
+            String jsonInputString = "{\"message\": \"" + data + "\"}";
+
+            // リクエストボディの送信
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            // レスポンスの取得
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    System.out.println("Jupyter Lab Response: " + response.toString());
+                    return response.toString();
+                }
+            } else {
+                return "Error: Received HTTP response code " + responseCode;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error while communicating with Jupyter Lab: " + e.getMessage();
+        }
+    }
+
+    // Unicodeエスケープ文字列をデコードするメソッド
+    private String decodeUnicode(String response) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            String jsonResponse = "\"" + response + "\""; // JSON形式にするためラップ
+            return mapper.readValue(jsonResponse, String.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "デコードに失敗しました: " + e.getMessage();
+        }
+    }
+}

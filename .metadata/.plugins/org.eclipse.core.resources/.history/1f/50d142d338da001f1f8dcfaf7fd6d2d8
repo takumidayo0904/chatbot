@@ -1,0 +1,42 @@
+package App1;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+/**
+ * Servlet implementation class mainpage
+ */
+@WebServlet("/mainpage")
+public class mainpage extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		String error="";
+	    
+		String msg =request.getParameter("message");
+		DBAcs dba = new DBAcs();
+		try {
+			
+			String sql = "insert into メッセージ values('" + msg + "') ";
+			dba.UpdateExe(sql);
+			System.out.println(msg);
+			URL url = new URL("https://chatgpt.com/share/67936188-b4a4-800e-9fe5-ed16a51b0e02");
+			 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			
+		} catch (Exception e) {
+		
+		}
+
+		
+	}
+
+}

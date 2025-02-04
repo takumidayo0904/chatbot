@@ -1,0 +1,104 @@
+package App1;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+// DBアクセスクラス（OracleまたはMySQLに対応）
+public class DBAcs {
+    private Connection con = null;
+    private PreparedStatement pstmt = null;
+    private ResultSet rs = null;
+
+    // データベース接続情報
+    private String dbType;  // Oracle または MySQL を選択
+    private String id = "x23j085";
+    private String pw = "fjbj085";
+
+    // Oracle用
+    private static final String ORACLE_URL = "jdbc:oracle:thin:@ux1.chiba-fjb.ac.jp:1521:orcl";
+    
+    // MySQL用（必要に応じて設定してください）
+    private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/your_database";
+    private static final String MYSQL_USER = "your_user";
+    private static final String MYSQL_PASSWORD = "your_password";
+
+    // コンストラクタ（データベースタイプを指定）
+    public DBAcs(String dbType) {
+        this.dbType = dbType;
+        System.out.println("ログイン処理実行");
+
+        try {
+            if ("oracle".equalsIgnoreCase(dbType)) {
+                // Oracleに接続
+                con = DriverManager.getConnection(ORACLE_URL, id, pw);
+                System.out.println("Oracleログイン成功");
+            } else if ("mysql".equalsIgnoreCase(dbType)) {
+                // MySQLに接続
+                con = DriverManager.getConnection(MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD);
+                System.out.println("MySQLログイン成功");
+            } else {
+                throw new SQLException("Unsupported database type: " + dbType);
+            }
+        } catch (SQLException e) {
+            System.out.println("ログイン失敗");
+            e.printStackTrace();
+        }
+    }
+
+    // SELECT文実行メソッド
+    public ResultSet selectExe(String sql) {
+        System.out.println("SELECT文実行");
+        System.out.println("SQL文：" + sql);
+        try {
+            pstmt = con.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+            System.out.println("SELECT文成功");
+        } catch (SQLException ex) {
+            System.out.println("SELECT文失敗");
+            this.closeDB();
+            ex.printStackTrace();
+        }
+        return rs;
+    }
+
+    // INSERT、UPDATE文実行メソッド（PreparedStatement版）
+    public int updateExeWithPreparedStatement(String sql, String msg) {
+        System.out.println("INSERT、又はUPDATE文実行");
+        System.out.println("SQL文：" + sql);
+        int cnt = 0;
+        try {
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, msg);  // msgをセット
+            cnt = pstmt.executeUpdate();
+            System.out.println("INSERT、又はUPDATE文成功");
+        } catch (SQLException ex) {
+            System.out.println("INSERT、又はUPDATE文失敗");
+            this.closeDB();
+            ex.printStackTrace();
+        }
+        return cnt;
+    }
+
+    // DB切断メソッド
+    public void closeDB() {
+        try {
+            System.out.println("DB切断処理");
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
+            if (con != null) {
+                con.close();
+            }
+            System.out.println("DB切断成功");
+        } catch (SQLException ex) {
+            System.out.println("DB切断失敗");
+            ex.printStackTrace();
+        }
+    }
+}

@@ -1,0 +1,7 @@
+INDEX VERSION 1.4+C:\ChatBot\.metadata\.plugins\org.eclipse.wst.jsdt.core\indexes
+4269809609.index
+2346007275.index
+962743615.index
+276060779.index
+1087879903.index
+1894984166.index

@@ -1,0 +1,68 @@
+package App1;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+// DBアクセスクラス
+public class DBAcs {
+    private static final String URL = "jdbc:mysql://localhost:3306/test";
+    private static final String USER = "root";
+    private static final String PASSWORD = "root";
+    
+    private static DBAcs instance;
+    
+    private DBAcs() {
+        try {
+            // JDBCドライバのロード
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("JDBCドライバのロード成功");
+        } catch (ClassNotFoundException e) {
+            System.err.println("JDBCドライバのロード失敗");
+            e.printStackTrace();
+        }
+    }
+    
+    public static DBAcs getInstance() {
+        if (instance == null) {
+            instance = new DBAcs();
+        }
+        return instance;
+    }
+    
+    public Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+    
+    // SELECT文実行メソッド
+    public ResultSet selectExe(String query) {
+        System.out.println("SELECT文実行: " + query);
+        try (Connection con = getConnection();
+             PreparedStatement pstmt = con.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+            System.out.println("SELECT文成功");
+            return rs;
+        } catch (SQLException e) {
+            System.err.println("SELECT文失敗");
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    // INSERT、UPDATE、DELETE文実行メソッド
+    public int updateExe(String sql) {
+        System.out.println("INSERT、UPDATE、DELETE文実行: " + sql);
+        try (Connection con = getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+            int cnt = pstmt.executeUpdate();
+            System.out.println("SQL実行成功");
+            return cnt;
+        } catch (SQLException e) {
+            System.err.println("SQL実行失敗");
+            e.printStackTrace();
+            return 0;
+        }
+    }
+}

@@ -1,0 +1,40 @@
+package App1;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/servlet/HelloServlet")
+public class HelloServlet extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // クライアントから送られてきたメッセージを取得
+        String message = request.getParameter("message");
+
+        // レスポンスのコンテンツタイプを設定
+        response.setContentType("text/plain");
+
+        // 出力ストリームを取得
+        PrintWriter out = response.getWriter();
+        
+        // メッセージを表示
+        out.println("Received message: " + message);
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // レスポンスのコンテンツタイプを設定
+        response.setContentType("text/plain");
+
+        // 出力ストリームを取得
+        PrintWriter out = response.getWriter();
+        
+        // 簡単なメッセージを表示
+        out.println("GET method is not supported. Please use POST.");
+    }
+}

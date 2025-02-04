@@ -1,0 +1,90 @@
+package App1;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.json.JSONObject;
+
+@WebServlet("/servlet/HelloServlet")
+public class HelloServlet extends HttpServlet {
+    private final String JUPYTER_LAB_URL = "http://localhost:5000/process_data"; // Jupyter LabのURL
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // GETメソッドの処理
+        response.setContentType("text/plain");
+        PrintWriter out = response.getWriter();
+        out.println("このサーブレットはJupyter Labとの通信にはPOSTリクエストのみをサポートしています。");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String message = request.getParameter("message");
+        System.out.println("デバッグ: 受け取ったパラメータ 'message': " + message);
+
+        // Jupyter Labにデータを送信してレスポンスを受け取る
+        String jupyterResponse = sendToJupyterLab(message);
+
+        // Jupyter LabからのJSONレスポンスを解析
+        JSONObject jsonResponse = new JSONObject(jupyterResponse);
+        String processedData = jsonResponse.getString("processed_data");
+
+        response.setContentType("text/plain");
+        PrintWriter out = response.getWriter();
+
+        // Jupyter Labのレスポンスを返す
+        out.println("Jupyter Labにメッセージを正常に送信しました: " + message);
+        out.println("Jupyter Labからのレスポンス - 処理されたデータ: " + processedData);
+    }
+
+    private String sendToJupyterLab(String data) {
+        try {
+            // Jupyter LabへのPOSTリクエスト
+            URL url = new URL(JUPYTER_LAB_URL);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json; utf-8");
+            connection.setDoOutput(true);
+
+            String jsonInputString = "{\"message\": \"" + data + "\"}";
+
+            // リクエストボディを送信
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            // レスポンスコードをチェック
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                // Jupyter Labからのレスポンスを読み込む
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    return response.toString(); // Jupyter Labからのレスポンスを返す
+                }
+            } else {
+                return "エラー: HTTPレスポンスコード " + responseCode;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Jupyter Labとの通信中にエラーが発生しました: " + e.getMessage();
+        }
+    }
+}

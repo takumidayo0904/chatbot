@@ -1,0 +1,36 @@
+package App1;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class DBAcs {
+
+    private static final String DATABASE_NAME = "データベース名";
+    private static final String PROPATIES = "?characterEncoding=UTF-8&serverTimezone=JST";
+    private static final String URL = "jdbc:mysql://localhost/" + DATABASE_NAME + PROPATIES;
+    private static final String USER = "ユーザー名";
+    private static final String PASS = "";
+
+    // DB接続を取得するメソッド
+    private Connection getConnection() throws SQLException, ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        return DriverManager.getConnection(URL, USER, PASS);
+    }
+
+    // PreparedStatementを使ってデータベース更新
+    public void executeUpdateWithPreparedStatement(String sql, String param) {
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, param);  // プレースホルダー(?)に値を設定
+            int rowsAffected = pstmt.executeUpdate();
+
+            System.out.println(rowsAffected + "行が更新されました");
+
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+}

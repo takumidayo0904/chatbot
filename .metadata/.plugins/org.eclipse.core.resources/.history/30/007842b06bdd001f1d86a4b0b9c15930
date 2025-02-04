@@ -1,0 +1,68 @@
+package App1;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/servlet/HelloServlet")
+public class HelloServlet extends HttpServlet {
+    private final String JUPYTER_LAB_URL = "http://localhost:5000/process_data"; // Jupyter LabのURL
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String message = request.getParameter("message");
+
+        // Jupyter Labへデータを送信し、レスポンスを受け取る
+        String jupyterResponse = sendToJupyterLab(message);
+
+        response.setContentType("text/plain");
+        response.getWriter().println("Message sent to Jupyter Lab: " + message);
+        response.getWriter().println("Jupyter Response: " + jupyterResponse);
+    }
+
+    private String sendToJupyterLab(String data) {
+        try {
+            // Jupyter LabへPOSTリクエストを送信
+            URL url = new URL(JUPYTER_LAB_URL);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json; utf-8");
+            connection.setDoOutput(true);
+
+            String jsonInputString = "{\"message\": \"" + data + "\"}";
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("Content-Type\", \"application/json; charset=utf-8");
+                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+
+                os.write(input, 0, input.length);
+            }
+
+            // Jupyter Labのレスポンスを読み取る
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    return response.toString(); // Jupyter Labのレスポンスを返す
+                }
+            } else {
+                return "Error: Received HTTP response code " + responseCode;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error while communicating with Jupyter Lab: " + e.getMessage();
+        }
+    }
+}

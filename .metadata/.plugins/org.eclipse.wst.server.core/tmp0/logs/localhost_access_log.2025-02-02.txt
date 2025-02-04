@@ -1,0 +1,13 @@
+127.0.0.1 - - [02/Feb/2025:05:56:51 +0900] "GET / HTTP/1.1" 404 895
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:56:52 +0900] "GET /ChatBot/index.jsp HTTP/1.1" 200 1285
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:56:52 +0900] "GET /favicon.ico HTTP/1.1" 404 906
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:57:04 +0900] "POST /ChatBot/HelloServlet HTTP/1.1" 302 -
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:57:04 +0900] "GET /ChatBot/index.jsp HTTP/1.1" 200 1395
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:57:36 +0900] "POST /ChatBot/HelloServlet HTTP/1.1" 302 -
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:57:36 +0900] "GET /ChatBot/index.jsp HTTP/1.1" 200 1497
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:57:42 +0900] "POST /ChatBot/HelloServlet HTTP/1.1" 302 -
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:57:42 +0900] "GET /ChatBot/index.jsp HTTP/1.1" 200 1568
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:59:20 +0900] "GET /ChatBot/index.jsp HTTP/1.1" 200 1568
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:59:22 +0900] "GET /ChatBot/index.jsp HTTP/1.1" 200 1568
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:05:59:35 +0900] "GET /ChatBot/index.jsp HTTP/1.1" 200 1574
+0:0:0:0:0:0:0:1 - - [02/Feb/2025:06:17:39 +0900] "GET /ChatBot/index.jsp HTTP/1.1" 200 1574

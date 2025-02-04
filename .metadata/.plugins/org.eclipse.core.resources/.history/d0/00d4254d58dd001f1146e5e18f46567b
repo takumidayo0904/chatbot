@@ -1,0 +1,87 @@
+package App1;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/servlet/HelloServlet")
+public class HelloServlet extends HttpServlet {
+    private final String JUPYTER_LAB_URL = "http://localhost:5000/process_data"; // Ensure the URL is correct
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // GET method response
+        response.setContentType("text/plain");
+        PrintWriter out = response.getWriter();
+        out.println("This servlet only supports POST requests for Jupyter Lab communication.");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String message = request.getParameter("message");
+        System.out.println("Debug: Received parameter 'message': " + message); // デバッグ情報
+
+        // Send data to Jupyter Lab and get the response
+        String jupyterResponse = sendToJupyterLab(message);
+
+        // デバッグ用にJupyterのレスポンスを表示
+        System.out.println("Debug: Jupyter Response: " + jupyterResponse);
+
+        response.setContentType("text/plain");
+        PrintWriter out = response.getWriter();
+
+        // Return Jupyter Lab's response
+        out.println("Message successfully sent to Jupyter Lab: " + message);
+        System.out.println("Jupyter Response: " + jupyterResponse);
+    }
+
+    private String sendToJupyterLab(String data) {
+        try {
+            // Send POST request to Jupyter Lab
+            URL url = new URL(JUPYTER_LAB_URL);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json; utf-8");
+            connection.setDoOutput(true);
+
+            String jsonInputString = "{\"message\": \"" + data + "\"}";
+
+            // Send the request body
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            // Get the response code and response body
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                // Read the response from Jupyter Lab
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    return response.toString(); // Return the full response from Jupyter Lab
+                }
+            } else {
+                return "Error: Received HTTP response code " + responseCode;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error while communicating with Jupyter Lab: " + e.getMessage();
+        }
+    }
+}
