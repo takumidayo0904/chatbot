@@ -8,7 +8,7 @@
 <style>
 body {
     background-color: #000;
-    font-family: Arial, sans-serif;  /* フォントを追加 */
+    font-family: Arial, sans-serif;
 }
 
 .chat-container {
@@ -38,21 +38,26 @@ body {
     box-shadow: 0 5px 5px rgb(0 0 0 / 20%);
 }
 
-.button-46 span {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background-image: linear-gradient(0, #fff, #ddd);
-    line-height: 64px;
-}
-
 .chat-messages {
     color: #FFFFFF;
-    font-size: 15px;
-    max-height: 70vh;  /* 画面の高さに合わせる */
-    overflow-y: auto;  /* スクロール可能に */
+    font-size:30px;
+    max-height: 70vh;
+    overflow-y: auto;
     padding: 10px;
     box-sizing: border-box;
+}
+
+/* メッセージのスタイル */
+.user-message {
+    text-align: right;
+    color: #00FF00; /* 緑色 (ユーザー) */
+    margin: 5px 0;
+}
+
+.bot-message {
+    text-align: left;
+    color: #00FFFF; /* 青色 (Jupyter) */
+    margin: 5px 0;
 }
 
 h1, h2 {
@@ -61,7 +66,7 @@ h1, h2 {
 
 .chat-input {
     position: fixed;
-    bottom: 0;  /* 画面下に固定 */
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
@@ -69,7 +74,6 @@ h1, h2 {
     padding: 10px;
     box-sizing: border-box;
 }
-
 </style>
 </head>
 <body>
@@ -80,7 +84,6 @@ h1, h2 {
 			</div>
 
 			<div class="chat-messages">
-
 				<h3>会話履歴:</h3>
 				<%
 				String chatHistory = (String) session.getAttribute("chatHistory");
@@ -88,14 +91,11 @@ h1, h2 {
 					out.print(chatHistory);
 				}
 				%>
-
 			</div>
 
 			<div class="chat-input">
 				<h2>お手伝いできることはありますか？</h2>
-
-				<input type="text" id="message" name="message"
-					placeholder="メッセージを入力..." />
+				<input type="text" id="message" name="message" placeholder="メッセージを入力..." />
 				<button class="button-46">
 					<span>送信</span>
 				</button>
